@@ -25,7 +25,6 @@ type Report struct {
 	bodyLines    []string
 	headerLines  []string
 	footerLines  []string
-	sections     [][]string
 	accumulator  map[string]float64
 }
 
@@ -91,9 +90,9 @@ func New(name string, header string, body string, footer string, rowsPerPage int
 	return f, nil
 }
 
-func (r *Report) newState(page int, data any, row any, curRow int) map[string]any {
-	return map[string]any{
-		"report": map[string]any{
+func (r *Report) newState(page int, data interface{}, row interface{}, curRow int) map[string]interface{} {
+	return map[string]interface{}{
+		"report": map[string]interface{}{
 			"page":        page,
 			"name":        r.Name,
 			"current_row": curRow,
@@ -105,7 +104,7 @@ func (r *Report) newState(page int, data any, row any, curRow int) map[string]an
 }
 
 // WriteReportContainedRows retrieves rows from data using query and renders the report, report written to w
-func (r *Report) WriteReportContainedRows(w io.Writer, data any, query string) error {
+func (r *Report) WriteReportContainedRows(w io.Writer, data interface{}, query string) error {
 	dj, err := json.Marshal(data)
 	if err != nil {
 		return err
@@ -120,11 +119,11 @@ func (r *Report) WriteReportContainedRows(w io.Writer, data any, query string) e
 		return fmt.Errorf("%s did not yield an array result", query)
 	}
 
-	return r.process(w, data, val.Value().([]any))
+	return r.process(w, data, val.Value().([]interface{}))
 }
 
 // ReportContainedRows retrieves rows from data using query and renders the report, returns report as bytes
-func (r *Report) ReportContainedRows(data any, query string) ([]byte, error) {
+func (r *Report) ReportContainedRows(data interface{}, query string) ([]byte, error) {
 	report := bytes.NewBuffer([]byte{})
 	err := r.WriteReportContainedRows(report, data, query)
 	if err != nil {
@@ -135,7 +134,7 @@ func (r *Report) ReportContainedRows(data any, query string) ([]byte, error) {
 }
 
 // Report produce a report of rows, results returned as bytes
-func (r *Report) Report(rows []any) ([]byte, error) {
+func (r *Report) Report(rows []interface{}) ([]byte, error) {
 	report := bytes.NewBuffer([]byte{})
 
 	err := r.process(report, nil, rows)
@@ -147,11 +146,11 @@ func (r *Report) Report(rows []any) ([]byte, error) {
 }
 
 // WriteReport produce a report of rows, result written to w
-func (r *Report) WriteReport(w io.Writer, data []any) error {
+func (r *Report) WriteReport(w io.Writer, data []interface{}) error {
 	return r.process(w, nil, data)
 }
 
-func (r *Report) process(w io.Writer, data any, rows []any) error {
+func (r *Report) process(w io.Writer, data interface{}, rows []interface{}) error {
 	page := 0
 
 	for item, row := range rows {
@@ -200,10 +199,6 @@ func (r *Report) process(w io.Writer, data any, rows []any) error {
 
 func (f *formatter) isPictureLine(line string) bool {
 	return strings.ContainsAny(line, "@^")
-}
-
-func (f *formatter) countPictureFormats(line string) int {
-	return strings.Count(line, "^") + strings.Count(line, "@")
 }
 
 func (f *formatter) picturesFromLine(line string) ([]string, error) {
@@ -258,7 +253,7 @@ func (f *formatter) variablesFromLine(line string, numVars int) ([]string, error
 		return nil, fmt.Errorf("invalid variable count")
 	}
 
-	for i, _ := range parts {
+	for i := range parts {
 		parts[i] = strings.TrimSpace(parts[i])
 	}
 
@@ -279,7 +274,7 @@ func (f *formatter) accumulate(item string, val float64) {
 	f.acc[name] += val
 }
 
-func (f *formatter) process(w io.Writer, row any) error {
+func (f *formatter) process(w io.Writer, row interface{}) error {
 	var (
 		numVars   int
 		pictures  []string
@@ -346,7 +341,7 @@ func (f *formatter) process(w io.Writer, row any) error {
 	return nil
 }
 
-func (f *formatter) processBytes(row any) ([]byte, error) {
+func (f *formatter) processBytes(row interface{}) ([]byte, error) {
 	out := bytes.NewBuffer([]byte{})
 
 	err := f.process(out, row)

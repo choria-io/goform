@@ -43,9 +43,9 @@ report.summary.acc
 		t.Fatalf("new failed")
 	}
 
-	var data []any
+	var data []interface{}
 	for i := 0; i < 4; i++ {
-		data = append(data, map[string]any{"acc": 1, "n": i, "x": "X thing", "y": "Y Thing", "z": "Z thing", "gb": 10*1024*1024*1024 + 12244, "int": 10, "float": float64(22) / 7})
+		data = append(data, map[string]interface{}{"acc": 1, "n": i, "x": "X thing", "y": "Y Thing", "z": "Z thing", "gb": 10*1024*1024*1024 + 12244, "int": 10, "float": float64(22) / 7})
 	}
 
 	out, err := f.Report(data)

@@ -186,7 +186,7 @@ if the length of a string exceeds that allowed by its layout the string is trunc
 |---------|-------------------------------------------------------------------------------------|
 | `@>>>>` | Right justified string maximum 5 characters long                                    |
 | `@<<<<` | Left justified string maximum 5 characters long                                     |
-| `@||||` |Center justified string maximum 5 characters long                                    |
+| `@||||` | Center justified string maximum 5 characters long                                   |
 | `@>>>:` | Right justified string, maximum 5 characters long with a `:` suffix after the value |
 
 #### Numbers

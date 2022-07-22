@@ -10,7 +10,7 @@ import (
 
 func TestFormatNumber(t *testing.T) {
 	var cases = []struct {
-		value     any
+		value     interface{}
 		format    string
 		expect    string
 		expectErr string
@@ -19,7 +19,7 @@ func TestFormatNumber(t *testing.T) {
 		{1, "@##", "1  ", ""},
 		{1.1, "@#.##", "1.10 ", ""},
 		{1.0, "@.##", "1.00", ""},
-		{100.0, "@##.##", "1.00", ""},
+		{1.0, "@##.##", "1.00  ", ""},
 		{int64(123456), "@,########", "123,456   ", ""},
 		{float64(123456), "@,########", "123,456   ", ""},
 		// formatCommaNumber
@@ -40,7 +40,7 @@ func TestFormatNumber(t *testing.T) {
 			t.Fatalf("expected err %s: %v", tc.expectErr, err)
 		}
 		if res != tc.expect {
-			t.Fatalf("expected '%v' got '%v'", tc.expect, res)
+			t.Fatalf("expected '%v' for format '%v' got '%v'", tc.expect, tc.format, res)
 		}
 	}
 }
