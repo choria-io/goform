@@ -1,4 +1,4 @@
-module github.com/choria-io/go-report
+module github.com/choria-io/goform
 
 go 1.18
 
