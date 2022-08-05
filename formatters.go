@@ -117,7 +117,7 @@ func formatString(v string, format string) (string, error) {
 	}
 }
 
-func formatNumber(v interface{}, format string) (string, error) {
+func formatNumber(v any, format string) (string, error) {
 	var val string
 	var err error
 
@@ -154,7 +154,7 @@ func formatNumber(v interface{}, format string) (string, error) {
 	return val, nil
 }
 
-func formatFloat(v interface{}, format string) (string, error) {
+func formatFloat(v any, format string) (string, error) {
 	parts := strings.Split(format, ".")
 	lp := len(parts)
 
@@ -172,7 +172,7 @@ func formatFloat(v interface{}, format string) (string, error) {
 	return fmt.Sprintf(sfmt, v), nil
 }
 
-func formatCommaNumber(v interface{}, format string) (string, error) {
+func formatCommaNumber(v any, format string) (string, error) {
 	switch nv := v.(type) {
 	case float64:
 		return humanize.Commaf(nv), nil
@@ -193,7 +193,7 @@ func formatCommaNumber(v interface{}, format string) (string, error) {
 	}
 }
 
-func formatBytesNumber(v interface{}, format string) (string, error) {
+func formatBytesNumber(v any, format string) (string, error) {
 	switch nv := v.(type) {
 	case float64:
 		return humanize.IBytes(uint64(nv)), nil
