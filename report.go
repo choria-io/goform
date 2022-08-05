@@ -90,9 +90,9 @@ func New(name string, header string, body string, footer string, rowsPerPage int
 	return f, nil
 }
 
-func (r *Report) newState(page int, data interface{}, row interface{}, curRow int) map[string]interface{} {
-	return map[string]interface{}{
-		"report": map[string]interface{}{
+func (r *Report) newState(page int, data any, row any, curRow int) map[string]any {
+	return map[string]any{
+		"report": map[string]any{
 			"page":        page,
 			"name":        r.Name,
 			"current_row": curRow,
@@ -104,7 +104,7 @@ func (r *Report) newState(page int, data interface{}, row interface{}, curRow in
 }
 
 // WriteReportContainedRows retrieves rows from data using query and renders the report, report written to w
-func (r *Report) WriteReportContainedRows(w io.Writer, data interface{}, query string) error {
+func (r *Report) WriteReportContainedRows(w io.Writer, data any, query string) error {
 	dj, err := json.Marshal(data)
 	if err != nil {
 		return err
@@ -119,11 +119,11 @@ func (r *Report) WriteReportContainedRows(w io.Writer, data interface{}, query s
 		return fmt.Errorf("%s did not yield an array result", query)
 	}
 
-	return r.process(w, data, val.Value().([]interface{}))
+	return r.process(w, data, val.Value().([]any))
 }
 
 // ReportContainedRows retrieves rows from data using query and renders the report, returns report as bytes
-func (r *Report) ReportContainedRows(data interface{}, query string) ([]byte, error) {
+func (r *Report) ReportContainedRows(data any, query string) ([]byte, error) {
 	report := bytes.NewBuffer([]byte{})
 	err := r.WriteReportContainedRows(report, data, query)
 	if err != nil {
@@ -134,7 +134,7 @@ func (r *Report) ReportContainedRows(data interface{}, query string) ([]byte, er
 }
 
 // Report produce a report of rows, results returned as bytes
-func (r *Report) Report(rows []interface{}) ([]byte, error) {
+func (r *Report) Report(rows []any) ([]byte, error) {
 	report := bytes.NewBuffer([]byte{})
 
 	err := r.process(report, nil, rows)
@@ -146,11 +146,11 @@ func (r *Report) Report(rows []interface{}) ([]byte, error) {
 }
 
 // WriteReport produce a report of rows, result written to w
-func (r *Report) WriteReport(w io.Writer, data []interface{}) error {
+func (r *Report) WriteReport(w io.Writer, data []any) error {
 	return r.process(w, nil, data)
 }
 
-func (r *Report) process(w io.Writer, data interface{}, rows []interface{}) error {
+func (r *Report) process(w io.Writer, data any, rows []any) error {
 	page := 0
 
 	for item, row := range rows {
@@ -274,7 +274,7 @@ func (f *formatter) accumulate(item string, val float64) {
 	f.acc[name] += val
 }
 
-func (f *formatter) process(w io.Writer, row interface{}) error {
+func (f *formatter) process(w io.Writer, row any) error {
 	var (
 		numVars   int
 		pictures  []string
@@ -341,7 +341,7 @@ func (f *formatter) process(w io.Writer, row interface{}) error {
 	return nil
 }
 
-func (f *formatter) processBytes(row interface{}) ([]byte, error) {
+func (f *formatter) processBytes(row any) ([]byte, error) {
 	out := bytes.NewBuffer([]byte{})
 
 	err := f.process(out, row)

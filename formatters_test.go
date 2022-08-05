@@ -10,7 +10,7 @@ import (
 
 func TestFormatNumber(t *testing.T) {
 	var cases = []struct {
-		value     interface{}
+		value     any
 		format    string
 		expect    string
 		expectErr string
