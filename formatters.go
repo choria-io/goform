@@ -32,7 +32,7 @@ func (f *formatter) getDataItem(data json.RawMessage, item string) (gjson.Result
 
 func formatDataItem(val gjson.Result, format string) (string, error) {
 	if !val.Exists() || val.Type == gjson.Null {
-		return strings.Repeat(" ", len(format)), nil
+		return "?" + strings.Repeat(" ", len(format)-1), nil
 	}
 
 	switch val.Type {
@@ -179,15 +179,15 @@ func formatCommaNumber(v any, format string) (string, error) {
 	case float32:
 		return humanize.Commaf(float64(nv)), nil
 	case int:
-		return humanize.Commaf(float64(nv)), nil
+		return humanize.Comma(int64(nv)), nil
 	case int8:
-		return humanize.Commaf(float64(nv)), nil
+		return humanize.Comma(int64(nv)), nil
 	case int16:
-		return humanize.Commaf(float64(nv)), nil
+		return humanize.Comma(int64(nv)), nil
 	case int32:
-		return humanize.Commaf(float64(nv)), nil
+		return humanize.Comma(int64(nv)), nil
 	case int64:
-		return humanize.Commaf(float64(nv)), nil
+		return humanize.Comma(int64(nv)), nil
 	default:
 		return "", fmt.Errorf("do not know how to handle value %v", v)
 	}

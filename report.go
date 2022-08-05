@@ -19,7 +19,7 @@ import (
 type Report struct {
 	Name         string `json:"name" yaml:"name"`
 	BodyLayout   string `json:"body" yaml:"body"`
-	HeaderLayout string `json:"header" yaml:"heqder"`
+	HeaderLayout string `json:"header" yaml:"header"`
 	FooterLayout string `json:"footer" yaml:"footer"`
 	RowsPerPage  int    `json:"rows_per_page" yaml:"rows_per_page"`
 	bodyLines    []string
