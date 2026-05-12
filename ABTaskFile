@@ -22,6 +22,7 @@ commands:
 
             go mod tidy
 
+            pinact run --update --exclude choria-io/actions/lint_and_test/go
     - name: test
       type: parent
       aliases: [t]
@@ -29,27 +30,18 @@ commands:
       commands:
         - name: unit
           type: exec
-          description: Run ginkgo unit tests
+          description: Run unit tests
           aliases: [u]
           arguments:
             - name: dir
               description: Directory to test
               default: .
-          flags:
-            - name: update
-              description: Updates the ginkgo runtime
-              bool: true
           script: |
             set -e
             
             . "{{ BashHelperPath }}"
 
-            {{ if .Flags.update }}
-                  ab_say Updating ginkgo binary
-                  go install github.com/onsi/ginkgo/v2/ginkgo
-            {{ end }}
-
-            ginkgo -r --skip Integration {{ .Arguments.dir | escape }}
+            go test ./...
 
         - name: lint
           type: exec

@@ -378,6 +378,28 @@ row.name, row.missing`
 	}
 }
 
+// Issue 4: lines containing "^" are detected as picture lines by
+// isPictureLine, but picturesFromLine only handles "@" — so a line like
+// "^abc" produces zero pictures, numVars stays 0, and the line is silently
+// dropped from the rendered output. Either "^" should be implemented as a
+// picture character (perlform-style fill), or it should not trigger picture
+// detection and pass through as a literal line.
+func TestCaretLineNotSilentlyDropped(t *testing.T) {
+	r, err := New("test", "", "^abc", "", 1)
+	if err != nil {
+		t.Fatalf("new failed: %v", err)
+	}
+
+	out, err := r.Report([]any{map[string]any{}})
+	if err != nil {
+		t.Fatalf("report failed: %v", err)
+	}
+
+	if !strings.Contains(string(out), "^abc") {
+		t.Fatalf("^abc body line silently dropped: output was %q", string(out))
+	}
+}
+
 func TestReportAccumulator(t *testing.T) {
 	body := `@<<<<<<<<< @##
 row.name, row.score`

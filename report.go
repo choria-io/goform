@@ -198,7 +198,7 @@ func (r *Report) process(w io.Writer, data any, rows []any) error {
 }
 
 func (f *formatter) isPictureLine(line string) bool {
-	return strings.ContainsAny(line, "@^")
+	return strings.ContainsAny(line, "@")
 }
 
 func (f *formatter) picturesFromLine(line string) ([]string, error) {
