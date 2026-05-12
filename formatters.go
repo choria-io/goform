@@ -55,7 +55,7 @@ func formatDataItem(val gjson.Result, format string) (string, error) {
 }
 
 func formatString(v string, format string) (string, error) {
-	if len(format) == 0 {
+	if len(format) < 2 {
 		return "", fmt.Errorf("invalid format: %s", format)
 	}
 
@@ -122,10 +122,10 @@ func formatNumber(v any, format string) (string, error) {
 	var err error
 
 	switch {
-	case format[1] == '0' || format[1] == '#' || strings.Contains(format, "."):
-		val, err = formatFloat(v, format)
 	case format[1] == ',':
 		val, err = formatCommaNumber(v, format)
+	case format[1] == '0' || format[1] == '#' || strings.Contains(format, "."):
+		val, err = formatFloat(v, format)
 	case format[1] == 'B':
 		val, err = formatBytesNumber(v, format)
 	default:
@@ -163,6 +163,13 @@ func formatFloat(v any, format string) (string, error) {
 	switch {
 	case lp == 1:
 		sfmt = "%d"
+		// %d on a float prints garbage like "%!d(float64=1.5)"; truncate first.
+		switch nv := v.(type) {
+		case float64:
+			v = int64(nv)
+		case float32:
+			v = int64(nv)
+		}
 	case lp == 2:
 		sfmt = fmt.Sprintf("%%%d.%df", len(parts[0]), len(parts[1]))
 	default:
@@ -173,24 +180,66 @@ func formatFloat(v any, format string) (string, error) {
 }
 
 func formatCommaNumber(v any, format string) (string, error) {
+	parts := strings.Split(format, ".")
+	precision := -1
+	if len(parts) == 2 {
+		precision = len(parts[1])
+	}
+
+	if precision < 0 {
+		switch nv := v.(type) {
+		case float64:
+			return humanize.Commaf(nv), nil
+		case float32:
+			return humanize.Commaf(float64(nv)), nil
+		case int:
+			return humanize.Comma(int64(nv)), nil
+		case int8:
+			return humanize.Comma(int64(nv)), nil
+		case int16:
+			return humanize.Comma(int64(nv)), nil
+		case int32:
+			return humanize.Comma(int64(nv)), nil
+		case int64:
+			return humanize.Comma(int64(nv)), nil
+		default:
+			return "", fmt.Errorf("do not know how to handle value %v", v)
+		}
+	}
+
+	var f float64
 	switch nv := v.(type) {
 	case float64:
-		return humanize.Commaf(nv), nil
+		f = nv
 	case float32:
-		return humanize.Commaf(float64(nv)), nil
+		f = float64(nv)
 	case int:
-		return humanize.Comma(int64(nv)), nil
+		f = float64(nv)
 	case int8:
-		return humanize.Comma(int64(nv)), nil
+		f = float64(nv)
 	case int16:
-		return humanize.Comma(int64(nv)), nil
+		f = float64(nv)
 	case int32:
-		return humanize.Comma(int64(nv)), nil
+		f = float64(nv)
 	case int64:
-		return humanize.Comma(int64(nv)), nil
+		f = float64(nv)
 	default:
 		return "", fmt.Errorf("do not know how to handle value %v", v)
 	}
+
+	s := humanize.CommafWithDigits(f, precision)
+	if precision == 0 {
+		return s, nil
+	}
+	// CommafWithDigits strips trailing zeros; pad them back to the requested precision.
+	dot := strings.IndexByte(s, '.')
+	if dot == -1 {
+		return s + "." + strings.Repeat("0", precision), nil
+	}
+	if cur := len(s) - dot - 1; cur < precision {
+		return s + strings.Repeat("0", precision-cur), nil
+	}
+	return s, nil
 }
 
 func formatBytesNumber(v any, format string) (string, error) {

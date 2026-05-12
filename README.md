@@ -115,6 +115,51 @@ We also support nested data where the rows are somewhere below the top level of 
 
 ## Reference
 
+### API
+
+The package exposes the following entry points. The `Write*` variants stream the
+report to an `io.Writer`; the others return the rendered report as a byte slice.
+
+| Function                                                                        | Purpose                                                                         |
+|---------------------------------------------------------------------------------|---------------------------------------------------------------------------------|
+| `New(name, header, body, footer string, rowsPerPage int) (*Report, error)`      | Construct a report from in-memory layout strings                                |
+| `NewFromFile(file, name string) (*Report, error)`                               | Load a report from a YAML file; `name` overrides the file's `name` if non-empty |
+| `(*Report).Report(rows []any) ([]byte, error)`                                  | Render rows and return the report as bytes                                      |
+| `(*Report).WriteReport(w io.Writer, rows []any) error`                          | Render rows and write the report to `w`                                         |
+| `(*Report).ReportContainedRows(data any, query string) ([]byte, error)`         | Render rows located at a GJSON path inside `data`; returns bytes                |
+| `(*Report).WriteReportContainedRows(w io.Writer, data any, query string) error` | Same as `ReportContainedRows` but streams to `w`                                |
+
+The `Report` struct can also be loaded directly from YAML — the recognised fields
+are `name`, `header`, `body`, `footer`, and `rows_per_page`. When loaded via
+`NewFromFile`, a `rows_per_page` of `0` (or absent) defaults to 20. When the
+report is constructed via `New` directly, passing `0` instead disables page
+breaks entirely — a single header and footer wrap the whole report regardless
+of row count.
+
+### Layout Rules
+
+A layout is split into lines, and each line is interpreted independently:
+
+- **Picture lines** contain at least one `@` and define field placeholders such
+  as `@<<<<<` or `@,#######`.
+- **Variable lines** immediately follow a picture line and supply the GJSON
+  paths for each field, comma-separated. The number of comma-separated values
+  must match the number of `@` pictures on the preceding line; if the count
+  does not match the line is not treated as a variable line.
+- **Comment lines** begin with `#` and are skipped entirely.
+- **Any other line** — separators, blank lines, fixed text — is emitted to the
+  output verbatim.
+
+Numeric values rendered from a `row.*` path are automatically accumulated and
+become available under `report.summary.<path>` (with the leading `row.` stripped)
+for use in headers and footers. Only fields that are *actually rendered* in the
+body contribute to the running totals; a field that is referenced solely in a
+header or footer is not added to its own summary.
+
+If the report is invoked with an empty slice of rows the body is skipped but
+the footer, if present, is still rendered once with `page` and `current_row`
+both at zero.
+
 ### Nested Data
 
 Let's say we want to render the `streams` item from this data:
@@ -170,7 +215,7 @@ over a data structure, the structure looks like this:
 |------------------------------|-------------------------------------------------------------------------------------------------------------|
 | `report.name`                | The name of the report as supplied in YAML or API calls                                                     |
 | `report.page`                | The current page being rendered starting from 1                                                             |
-| `report_current_row`         | The index of the current row being rendered, 0 based                                                        |
+| `report.current_row`         | The index of the current row being rendered, 0 based                                                        |
 | `report.summary.state.bytes` | The accumulated sum of `row.state.bytes`, only tracks fields that was previously printed                    |
 | `row.state.bytes`            | The `row` is the current row of data being rendered, `state.bytes` is a GJSON query into that structure     |
 | `data.x`                     | When rendering rows from a nested structure based on a GJSON query, this is the entire original data source |
@@ -184,10 +229,15 @@ if the length of a string exceeds that allowed by its layout the string is trunc
 
 | Format  | Description                                                                         |
 |---------|-------------------------------------------------------------------------------------|
-| `@>>>>` | Right justified string maximum 5 characters long                                    |
-| `@<<<<` | Left justified string maximum 5 characters long                                     |
-| `@||||` | Center justified string maximum 5 characters long                                   |
-| `@>>>:` | Right justified string, maximum 5 characters long with a `:` suffix after the value |
+| `@>>>>`  | Right justified string maximum 5 characters long                                    |
+| `@<<<<`  | Left justified string maximum 5 characters long                                     |
+| `@\|\|\|\|` | Center justified string maximum 5 characters long                                |
+| `@>>>:`  | Right justified string, maximum 5 characters long with a `:` suffix after the value |
+
+Boolean values are rendered using the string formatter as the literal text `true` or `false`.
+
+When a layout references a path that does not exist in the data, or whose value is `null`,
+the field is rendered as `?` followed by spaces padded to the format width.
 
 #### Numbers
 
@@ -198,7 +248,12 @@ a series of `#` characters will be returned indicating field overflow.
 |-------------|-------------------------------------------------------------------------------------------------------|
 | `@########` | Renders a number with any gaps filled by space on the right                                           |
 | `@,#######` | Renders a number in `comma` format, `1234` becomes `1,234`, space padded on the right                 |
-| `@B#######` | Renders a number as base 1024 bytes, `1024` becomes `1KiB`, space padded on the right                 |
-| `@.##`      | Renders a floating point number with specific precision, `1.234` becomes `1.12` but `10.12` overflows |
-| `@#.##`     | Renders a floating point with specific precision, `10.234` becomes `10.12` but `100.123` overflows    |
+| `@,###.##`  | Renders a number with both commas and a fixed decimal precision, `1234.5` becomes `1,234.50`          |
+| `@B#######` | Renders a number as base 1024 bytes, `1024` becomes `1.0 KiB`, space padded on the right              |
+| `@.##`      | Renders a floating point number with specific precision, `1.234` becomes `1.23` but `10.12` overflows |
+| `@#.##`     | Renders a floating point with specific precision, `10.234` becomes `10.23` but `100.123` overflows    |
 | `@0.###`    | Renders a floating point with specific precision, padded by `0` on the left                           |
+
+Negative integers are accepted by all numeric formats. The byte formatter (`@B...`) is
+backed by an unsigned conversion and so does not currently render negative values correctly —
+prefer it only for byte counts that are known to be non-negative.

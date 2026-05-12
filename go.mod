@@ -4,7 +4,7 @@ go 1.25
 
 require (
 	github.com/dustin/go-humanize v1.0.1
-	github.com/tidwall/gjson v1.18.0
+	github.com/tidwall/gjson v1.19.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
